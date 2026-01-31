@@ -26,6 +26,8 @@ This trading bot is built on a **modular architecture** where:
 - **Async-First**: Built with Python `asyncio` for high-performance concurrent operations
 - **Real-Time Data**: WebSocket connection to market data feeds
 
+IMPORTANT: This bot is implemented to use the Delta Exchange API. Live trading and REST/API actions expect Delta Exchange API credentials (API key and secret) and are not compatible with other exchanges' key formats or endpoints.
+
 ## Features
 
 ✅ **Multiple Trading Strategies**
@@ -42,6 +44,7 @@ This trading bot is built on a **modular architecture** where:
 - Real broker integration for executing trades with real money
 - Secure API credential handling via environment variables
 - Position and balance tracking
+Note: Live trading currently supports Delta Exchange only; provide Delta API key/secret.
 
 ✅ **Multi-Symbol Support**
 - Trade multiple instruments simultaneously
@@ -101,6 +104,10 @@ export DELTA_PRODUCT_ID="ETHUSD"
 export DELTA_WS_URL="wss://socket.india.delta.exchange"
 export DELTA_SYMBOLS="BTCUSD,ETHUSD"
 ```
+
+Note: The variables above must contain credentials issued by Delta Exchange. The bot accepts only Delta API keys and secrets for live trading; other exchanges' credentials will not work.
+
+See the Delta Exchange API documentation for details and credential setup: [Delta Exchange API docs](https://docs.delta.exchange/#introduction).
 
 Or set them in `config/settings.py` (not recommended for production):
 
