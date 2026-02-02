@@ -25,16 +25,16 @@ LIVE_BROKER_CONFIG = {
 # STRATEGY CONFIGURATION
 # ============================================================================
 # Strategy class to use - import and reference the class
-from strategy.rsi_pullback_strategy import RSIPullbackStrategy
+
+# Use MaxBreakoutShortStrategy for paper trading
+from strategy.max_breakout_short_strategy import MaxBreakoutShortStrategy
 
 # The strategy class and its parameters
-STRATEGY_CLASS = RSIPullbackStrategy
+STRATEGY_CLASS = MaxBreakoutShortStrategy
 STRATEGY_PARAMS = {
-    "rsi_period": 14,
-    "pullback_5m": 30,
-    "pullback_1h": 35,
-    "take_profit": 0.015,  # 1.5%
-    "stop_loss": -0.005,   # -0.5%
+    "lookback_period": 180,  # Number of candles to look back for max
+    "stop_loss_pct": 1.0,    # 1% stop loss
+    "target_return_pct": 3.0 # 3% target return
 }
 
 
