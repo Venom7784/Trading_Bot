@@ -28,19 +28,25 @@ This trading bot is built on a **modular architecture** where:
 
 IMPORTANT: This bot is implemented to use the Delta Exchange API. Live trading and REST/API actions expect Delta Exchange API credentials (API key and secret) and are not compatible with other exchanges' key formats or endpoints.
 
+
 ## Features
 
 ✅ **Multiple Trading Strategies**
 - Rolling Return Strategy
-- Max Breakout Short Strategy  
+- Max Breakout Short Strategy
 - Extensible template for custom strategies
+
+✅ **Historical Data Fetching System**
+- Fetches historical candlestick data from Delta Exchange API
+- Feeds historical data into strategies for warm-up and backtesting
+- Easily configurable lookback period and resolution
 
 ✅ **Paper Trading**
 - Simulated trading with configurable initial balance
 - Full P&L tracking and statistics per symbol
 - Risk management with stop loss and take profit
 
-✅ **Live Trading** 
+✅ **Live Trading**
 - Real broker integration for executing trades with real money
 - Secure API credential handling via environment variables
 - Position and balance tracking
@@ -60,6 +66,37 @@ Note: Live trading currently supports Delta Exchange only; provide Delta API key
 - Async candlestick streaming
 - Multiple resolution support (1m, 3m, 5m, 15m, 30m, 1h, 2h, 4h, 6h, 12h, 1d, 1w)
 - Automatic reconnection handling
+## Historical Data Fetching System
+
+The bot includes a built-in system for fetching and feeding historical candlestick data to your trading strategies. This allows you to "warm up" strategies with past data before live trading, or to run backtests.
+
+**Key Components:**
+- `data/historical_collector.py`: Downloads historical candles from the Delta Exchange API for any symbol, resolution, and time range.
+- `data/historical_feeder.py`: Feeds the downloaded historical candles into your strategy, updating its state as if it had been running live.
+
+**Example Usage:**
+
+```python
+from data.historical_collector import HistoricalDataCollector, get_unix_timestamp
+from data.historical_feeder import feed_historical_data_to_strategy
+import asyncio
+
+# Set up time range (e.g., last 30 days)
+from datetime import datetime, timedelta
+start = get_unix_timestamp(datetime.utcnow() - timedelta(days=30))
+end = get_unix_timestamp(datetime.utcnow())
+
+# Collect historical candles
+collector = HistoricalDataCollector('BTCUSD', start, end, ['5m', '1h'], session)
+candles = await collector.collect_all()
+
+# Feed to strategy (async)
+# strategy = YourStrategy(...)
+# await feed_historical_data_to_strategy(strategy, 'BTCUSD', 30, ['5m'])
+```
+
+This system is used automatically by the engine to initialize strategies with historical data before live trading, based on the `DAYS_BACK` setting in `config/trading_config.py`.
+
 
 ## Installation
 
@@ -309,30 +346,6 @@ SYMBOLS = ["BTCUSD", "ETHUSD", "SOLUSD"]
 
 ## Strategies
 
-### Rolling Return Strategy
-
-**File**: `strategy/rolling_return.py`
-
-**How It Works**:
-- Calculates percentage return over a rolling window
-- Generates LONG signal when average return exceeds `long_th`
-- Generates SHORT signal when average return falls below `short_th`
-- FLAT signal when return is between thresholds
-
-**Parameters**:
-- `window`: Number of candles to look back (default: 5)
-- `long_th`: Threshold for long signal in % (default: 0.1)
-- `short_th`: Threshold for short signal in % (default: -0.1)
-
-**Usage**:
-```python
-STRATEGY_CLASS = RollingReturnStrategy
-STRATEGY_PARAMS = {
-    "window": 5,
-    "long_th": 0.1,
-    "short_th": -0.1,
-}
-```
 
 ### Max Breakout Short Strategy
 
