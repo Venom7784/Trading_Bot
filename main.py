@@ -23,6 +23,7 @@ from config.trading_config import (
 )
 from data.webscoket import candlestick_stream
 from engine.runner import MultiSymbolEngine
+from data.historical_feeder import feed_historical_data_to_strategy
 
 # ============================================================================
 # SETUP LOGGING
@@ -101,6 +102,21 @@ async def main() -> None:
         resolution=RESOLUTION,
         throttle=THROTTLE
     )
+    
+    # Feed historical data to each strategy instance before live trading
+    from config.trading_config import DAYS_BACK
+    import aiohttp
+    session = aiohttp.ClientSession()
+    try:
+        for symbol in SYMBOLS:
+            # Get the engine for this symbol
+            strat_engine = engine._get_engine(symbol)
+            logger.info(f"[HISTORICAL] Feeding {DAYS_BACK} days of historical data for {symbol}...")
+            await feed_historical_data_to_strategy(strat_engine.strategy, symbol, DAYS_BACK, [RESOLUTION], session=session)
+            logger.info(f"[HISTORICAL] Done feeding historical data for {symbol}.")
+            logger.debug(f"[DEBUG] Full strategy state dict for {symbol}: {strat_engine.strategy.__dict__}")
+    finally:
+        await session.close()
     
     # Track statistics update interval
     import time

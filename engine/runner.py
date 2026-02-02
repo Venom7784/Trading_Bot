@@ -58,7 +58,7 @@ class TradingEngine:
         signal = self.strategy.update(candle)
 
         # Skip if signal hasn't changed
-        if signal == prev_signal:
+        if signal == self.position_side:
             return
 
         # Throttle orders

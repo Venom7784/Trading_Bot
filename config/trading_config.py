@@ -25,21 +25,30 @@ LIVE_BROKER_CONFIG = {
 # STRATEGY CONFIGURATION
 # ============================================================================
 # Strategy class to use - import and reference the class
-from strategy.rolling_return import RollingReturnStrategy
+from strategy.rsi_pullback_strategy import RSIPullbackStrategy
 
 # The strategy class and its parameters
-STRATEGY_CLASS = RollingReturnStrategy
+STRATEGY_CLASS = RSIPullbackStrategy
 STRATEGY_PARAMS = {
-    "window": 5,        # Look back 180 candles for max
-    "long_th": 0.1,       # 1% stop loss
-    "short_th":-0.1,   # 3% target return
+    "rsi_period": 14,
+    "pullback_5m": 30,
+    "pullback_1h": 35,
+    "take_profit": 0.015,  # 1.5%
+    "stop_loss": -0.005,   # -0.5%
 }
+
 
 # ============================================================================
 # ENGINE CONFIGURATION
 # ============================================================================
-RESOLUTION = "1m"  # Candle resolution for strategy
+RESOLUTION = "5m"  # Candle resolution for strategy
 THROTTLE = 0.5     # Minimum time between orders (seconds)
+
+# ============================================================================
+# HISTORICAL DATA CONFIGURATION
+# ============================================================================
+# Number of days of historical data to feed into the strategy before live trading
+DAYS_BACK = 0.5
 
 # ============================================================================
 # LOGGING CONFIGURATION
