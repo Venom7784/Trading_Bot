@@ -452,7 +452,9 @@ bot/
 │
 ├── data/
 │   ├── websocket.py                 # WebSocket market data streaming
-│   └── parser.py                    # Candlestick data parsing
+│   ├── parser.py                    # Candlestick data parsing
+│   ├── historical_collector.py      # Fetches historical candlestick data
+│   └── historical_feeder.py         # Feeds historical data to strategies
 │
 ├── execution/
 │   ├── broker.py                    # Live broker API client
