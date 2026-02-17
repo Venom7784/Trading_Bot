@@ -57,13 +57,16 @@ if LOG_TO_CONSOLE:
 # GLOBAL STATE
 # ============================================================================
 broker = None
+final_stats_printed = False
 
 
 def signal_handler(sig, frame):
     """Handle Ctrl+C gracefully - log statistics before exiting."""
+    global final_stats_printed
     if broker:
         logger.info("Shutting down... Printing final statistics:")
         broker.print_statistics()
+        final_stats_printed = True
     sys.exit(0)
 
 
@@ -171,6 +174,13 @@ async def main() -> None:
     
     finally:
         if broker:
+            # Avoid double-printing if signal handler already printed final stats
+            try:
+                if final_stats_printed:
+                    return
+            except NameError:
+                pass
+
             logger.info("=" * 80)
             logger.info("FINAL STATISTICS")
             logger.info("=" * 80)

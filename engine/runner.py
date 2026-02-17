@@ -1,6 +1,8 @@
 from typing import Callable
 import logging
 import time
+import requests
+import json
 
 class TradingEngine:
     def __init__(self, strategy, broker, throttle=0.5, resolution: str | None = None):
@@ -19,9 +21,11 @@ class TradingEngine:
         self.last_order_ts = 0
         self.throttle = throttle
         self.resolution = resolution
+        self.POSITION_SIZE = 1  # You can adjust this
         self.position_size = 0.0   # size in contracts
         self.position_side = 0  
         self.logger = logging.getLogger("trading_bot")
+        self.product_id = None  # Store product ID for the trading pair
 
         self.stats = {
         "trades": 0,
@@ -32,6 +36,29 @@ class TradingEngine:
         "max_loss": 0.0,
         }
         self.entry_price = None
+    
+    def get_product_id_from_symbol(self, symbol: str) -> int | None:
+        """
+        Fetch product ID from the exchange API using the symbol.
+        Only called if product_id is None.
+        
+        Args:
+            symbol: Trading symbol (e.g., "BTCUSD")
+            
+        Returns:
+            Product ID (int) or None if not found
+        """
+        try:
+            headers = {'Accept': 'application/json'}
+            r = requests.get('https://api.india.delta.exchange/v2/products/{symbol}', headers=headers)
+            if r.status_code == 200:
+                data = r.json()
+                return data["result"]["id"]
+            self.logger.warning(f"Product not found for symbol: {symbol}")
+            return None
+        except Exception as e:
+            self.logger.error(f"Error fetching product ID for {symbol}: {e}")
+            return None
   
 
 
@@ -71,6 +98,13 @@ class TradingEngine:
         # Get price and symbol from candle for broker
         price = candle.get("close", candle.get("open", 0.0))
         symbol = candle.get("symbol")
+        
+        # Get product ID if not already set
+        if self.product_id is None:
+            self.product_id = self.get_product_id_from_symbol(symbol)
+            if self.product_id is None:
+                self.logger.error(f"Could not retrieve product ID for {symbol}")
+                return
 
         # # Case 1: Exit position (signal goes from 1 or -1 to 0)
         # if prev_signal != 0 and signal == 0:
@@ -101,18 +135,18 @@ class TradingEngine:
 
         # ENTRY from flat
         if self.position_side == 0 and signal != 0:
-            size = self._calc_entry_size(price)
+            size = self.POSITION_SIZE
 
             if signal == 1:
                 self.logger.info(f"Entering position: Buying {size} of {symbol} at {price}")
-                result = await self.broker.market("buy", size, symbol=symbol, price=price, reduce_only=False)
+                result = await self.broker.market("buy", size, product_id=self.product_id, price=price, reduce_only=False)
                 if result.get("success"):
                     self.entry_price = price
                     self.position_size = size
                     self.position_side = signal
             else:
                 self.logger.info(f"Entering position: Selling {size} of {symbol} at {price}")
-                result = await self.broker.market("sell", size, symbol=symbol, price=price, reduce_only=False)
+                result = await self.broker.market("sell", size, product_id=self.product_id, price=price, reduce_only=False)
                 if result.get("success"):
                     self.entry_price = price
                     self.position_size = size
@@ -126,7 +160,7 @@ class TradingEngine:
                 self.logger.info(f"Exiting long position: Selling to close {self.position_size} of {symbol} at {price}")
             else:
                 self.logger.info(f"Exiting short position: Buying to close {self.position_size} of {symbol} at {price}")
-            result = await self.broker.market(side, self.position_size, symbol=symbol, price=price, reduce_only=True)
+            result = await self.broker.market(side, self.position_size, product_id=self.product_id, price=price, reduce_only=True)
             if result.get("success"):
                 pnl = self._calc_pnl(price)
                 self.stats["trades"] += 1
@@ -149,7 +183,7 @@ class TradingEngine:
                 self.logger.info(f"Exiting long position: Selling to close {self.position_size} of {symbol} at {price}")
             else:
                 self.logger.info(f"Exiting short position: Buying to close {self.position_size} of {symbol} at {price}")
-            result = await self.broker.market(exit_side, self.position_size, symbol=symbol, price=price, reduce_only=True)
+            result = await self.broker.market(exit_side, self.position_size, product_id=self.product_id, price=price, reduce_only=True)
             if result.get("success"):
                 pnl = self._calc_pnl(price)
                 self.stats["trades"] += 1
@@ -162,13 +196,13 @@ class TradingEngine:
                     self.stats["max_loss"] = min(self.stats["max_loss"], pnl)
                 self.entry_price = None
 
-                new_size = self._calc_entry_size(price)
+                new_size = self.POSITION_SIZE
                 entry_side = "buy" if signal == 1 else "sell"
                 if entry_side == "buy":
                     self.logger.info(f"Entering position: Buying {new_size} of {symbol} at {price}")
                 else:
                     self.logger.info(f"Entering position: Selling {new_size} of {symbol} at {price}")
-                result = await self.broker.market(entry_side, new_size, symbol=symbol, price=price, reduce_only=False)
+                result = await self.broker.market(entry_side, new_size, product_id=self.product_id, price=price, reduce_only=False)
                 if result.get("success"):
                     self.entry_price = price
                     self.position_size = new_size
@@ -176,12 +210,6 @@ class TradingEngine:
 
     def _calc_pnl(self, exit_price: float) -> float:
         return (exit_price - self.entry_price) * self.position_size * self.position_side
-
-
-
-    def _calc_entry_size(self, price: float) -> float:
-        NOTIONAL = 10.0
-        return NOTIONAL / price
 
     def get_stats(self) -> dict:
         trades = self.stats["trades"]

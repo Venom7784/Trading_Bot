@@ -282,34 +282,41 @@ class PaperBroker:
     def print_statistics(self, symbol: Optional[str] = None):
         """Print formatted statistics."""
         stats = self.get_statistics(symbol)
-        
+        logger = logging.getLogger("trading_bot")
+
         if symbol:
-            print(f"\n=== Statistics for {symbol} ===")
-            print(f"Trades: {stats['trades']}")
-            print(f"Wins: {stats['wins']} | Losses: {stats['losses']}")
-            print(f"Win Rate: {stats['win_rate']:.2f}%")
-            print(f"Total P&L: ${stats['total_pnl']:.2f}")
-            print(f"Max Profit: ${stats['max_profit']:.2f} | Max Loss: ${stats['max_loss']:.2f}")
+            logger.info("=== Statistics for %s ===", symbol)
+            logger.info("Trades: %d", stats['trades'])
+            logger.info("Wins: %d | Losses: %d", stats['wins'], stats['losses'])
+            logger.info("Win Rate: %.2f%%", stats['win_rate'])
+            logger.info("Total P&L: $%.2f", stats['total_pnl'])
+            logger.info("Max Profit: $%.2f | Max Loss: $%.2f", stats['max_profit'], stats['max_loss'])
         else:
-            print(f"\n=== Overall Paper Trading Statistics ===")
-            print(f"Total Trades: {stats['total_trades']}")
-            print(f"Wins: {stats['total_wins']} | Losses: {stats['total_losses']}")
-            print(f"Win Rate: {stats['win_rate']:.2f}%")
-            print(f"Total P&L: ${stats['total_pnl']:.2f}")
-            print(f"Initial Balance: ${stats['initial_balance']:.2f}")
-            print(f"Current Balance: ${stats['current_balance']:.2f}")
-            print(f"Total Return: {stats['total_return']:.2f}%")
-            print(f"Open Positions: {stats['open_positions']}")
-            
+            logger.info("=== Overall Paper Trading Statistics ===")
+            logger.info("Total Trades: %d", stats['total_trades'])
+            logger.info("Wins: %d | Losses: %d", stats['total_wins'], stats['total_losses'])
+            logger.info("Win Rate: %.2f%%", stats['win_rate'])
+            logger.info("Total P&L: $%.2f", stats['total_pnl'])
+            logger.info("Initial Balance: $%.2f", stats['initial_balance'])
+            logger.info("Current Balance: $%.2f", stats['current_balance'])
+            logger.info("Total Return: %.2f%%", stats['total_return'])
+            logger.info("Open Positions: %d", stats['open_positions'])
+
             # Print per-symbol stats if there are any
             if self.stats:
-                print(f"\n=== Per-Symbol Statistics ===")
+                logger.info("=== Per-Symbol Statistics ===")
                 for sym, sym_stats in sorted(self.stats.items(), key=lambda x: x[1]["total_pnl"], reverse=True):
                     if sym_stats["trades"] > 0:
                         win_rate = (sym_stats["wins"] / sym_stats["trades"] * 100) if sym_stats["trades"] > 0 else 0.0
-                        print(f"{sym}: {sym_stats['trades']} trades, "
-                              f"{sym_stats['wins']}W/{sym_stats['losses']}L ({win_rate:.1f}%), "
-                              f"P&L: ${sym_stats['total_pnl']:.2f}")
+                        logger.info(
+                            "%s: %d trades, %dW/%dL (%.1f%%), P&L: $%.2f",
+                            sym,
+                            sym_stats['trades'],
+                            sym_stats['wins'],
+                            sym_stats['losses'],
+                            win_rate,
+                            sym_stats['total_pnl']
+                        )
     
     def get_positions(self) -> dict:
         """Get all open positions."""

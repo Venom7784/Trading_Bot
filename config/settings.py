@@ -10,7 +10,6 @@ import os
 # REST trading credentials
 API_KEY: str = os.getenv("DELTA_API_KEY", "")
 API_SECRET: str = os.getenv("DELTA_API_SECRET", "")
-PRODUCT_ID: str = os.getenv("DELTA_PRODUCT_ID", "ETHUSD")
 
 # WebSocket market data configuration
 WS_URL: str = os.getenv("DELTA_WS_URL", "wss://socket.india.delta.exchange")

@@ -3,11 +3,10 @@ import asyncio
 import logging
 
 class Broker:
-    def __init__(self, session, api_key, api_secret, product_id):
+    def __init__(self, session, api_key, api_secret):
         self.session = session
         self.api_key = api_key
         self.api_secret = api_secret
-        self.product_id = product_id
         self.logger = logging.getLogger(__name__)
 
     async def get_balance(self):
@@ -24,14 +23,14 @@ class Broker:
             balance_str = data["result"][0]["balance"]
             return float(balance_str)
 
-    async def market(self, side: str, size: float, symbol: str | None = None, price: float | None = None, min_balance: float = 0, reduce_only: bool = False):
+    async def market(self, side: str, size: float, product_id: int, price: float | None = None, min_balance: float = 0, reduce_only: bool = False):
         """
         Execute a market order.
         
         Args:
             side: "buy" or "sell"
             size: Order size
-            symbol: Trading symbol (optional, not used by real broker)
+            product_id: Product ID from the exchange (required)
             price: Current price (optional, not used by real broker)
             min_balance: Minimum balance required to execute order
             reduce_only: Whether the order is reduce-only
@@ -46,7 +45,7 @@ class Broker:
 
         path = "/v2/orders"
         payload = {
-            "product_id": self.product_id,
+            "product_id": product_id,
             "side": side,
             "order_type": "market_order",
             "size": size,
